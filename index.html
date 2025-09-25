@@ -17,13 +17,17 @@
       <h1>Find your film</h1>
       <h2><a href="watchlist.html" class="watchlist-link">My Watchlist</a></h2>
       <div class="search-bar">
-        <input type="search" placeholder="Search for a movie" />
-        <button>Search</button>
+        <input
+          id="input-field"
+          type="search"
+          placeholder="Search for a movie"
+        />
+        <button id="search-btn">Search</button>
       </div>
     </header>
 
     <main class="main">
-      <div class="initial-icon">
+      <div class="initial-icon" id="initial-icon">
         <img
           src="./img/no-data-initial.svg"
           alt="no-data-initial"
@@ -32,5 +36,6 @@
       </div>
       <div class="movie-list" id="movie-list"></div>
     </main>
+    <script src="/app.js"></script>
   </body>
 </html>

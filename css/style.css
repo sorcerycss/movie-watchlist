@@ -91,3 +91,19 @@ a {
   align-items: center;
   height: 100vh;
 }
+
+.hidden {
+  display: none;
+}
+
+.movie-card {
+  display: flex;
+}
+
+.movie-details {
+  display: flex;
+}
+
+.movie-details p {
+  margin-right: 25px;
+}
