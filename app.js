@@ -1,12 +1,27 @@
+// ============================================================
+// CONFIG
+// ============================================================
 // Public demo API key for OMDb
 const API_KEY = "284cda59"
 const BASE_URL = "https://www.omdbapi.com"
 
+
+// ============================================================
+// DOM ELEMENTS
+// ============================================================
 /* SEARCH PAGE ELEMENTS */
 const searchBtn = document.getElementById("search-btn") // the search button
 const movieList = document.getElementById("movie-list") // container where results render
 const initialIcon = document.getElementById("initial-icon") // empty-state icon wrapper
 const inputEl = document.getElementById("input-field") // the search <input>
+
+
+/* =========================
+   API FUNCTIONS
+   ========================= */
+// ============================================================
+// API HELPERS  ← pure functions, no DOM touching
+// ============================================================
 
 // Give me a list of movies (basic info)
 async function fetchMovies(query) {
@@ -27,6 +42,57 @@ async function fetchMovieDetails(imdbID) {
   }
 }
 
+// ============================================================
+// UI HELPERS  ← DOM/HTML functions
+// ============================================================
+/* =========================
+   RENDER FUNCTIONS
+   ========================= */
+
+//Take one movie object, return its HTML
+        function createMovieCard(movie) {
+          return `
+                  <div class="movie-card">
+                    <div>
+                      <img class="movie-img" src="${movie.Poster}"/>
+                    </div>
+                    <div class="card-container">
+                      <h3 class="movie-title">${movie.Title} ⭐${movie.imdbRating}</h3>
+                      <div class="movie-details">
+                        <p>${movie.Runtime}</p>
+                        <p>${movie.Genre}</p>
+                      <!-- The button carries the data we want to save in data-* attributes -->
+                        <button
+                          class="btn-add"
+                          data-id="${movie.imdbID}"
+                          data-title="${movie.Title}"
+                          data-poster="${movie.Poster}"
+                        >+</button>
+                        <p class="btn-add-text">Watchlist</p>
+                    </div>
+                      <p>${movie.Plot}</p>
+                    </div>
+                  </div>
+                  `
+        }
+
+        function renderMovies(detailsArray) {
+          movieList.innerHTML = detailsArray
+          .map(movie => createMovieCard(movie))
+          .join("")
+        }
+
+
+// ============================================================
+// WATCHLIST HELPERS  ← localStorage functions
+// ============================================================
+
+// ============================================================
+// EVENT LISTENERS  ← wires everything together, goes last
+// ============================================================
+/* =========================
+   SEARCH PAGE
+   ========================= */
 // Run search logic only on the search page
 //  (these elements don’t exist on the watchlist page)
 if (searchBtn && movieList && inputEl) {
@@ -45,6 +111,7 @@ if (searchBtn && movieList && inputEl) {
        // Await the search
       const movies = await fetchMovies(query)
 
+      // showError function here
       if (!movies) {
         movieList.innerHTML = `
           <div class="unable-text-wrapper">
@@ -58,30 +125,7 @@ if (searchBtn && movieList && inputEl) {
         movies.map(movie => fetchMovieDetails(movie.imdbID))
       )).filter(Boolean) // clean final array
 
-      // Render
-        movieList.innerHTML = detailsArray.map(details => `
-          <div class="movie-card">
-            <div>
-              <img class="movie-img" src="${details.Poster}"/>
-            </div>
-            <div class="card-container">
-              <h3 class="movie-title">${details.Title} ⭐${details.imdbRating}</h3>
-              <div class="movie-details">
-                <p>${details.Runtime}</p>
-                <p>${details.Genre}</p>
-              <!-- The button carries the data we want to save in data-* attributes -->
-                <button
-                  class="btn-add"
-                  data-id="${details.imdbID}"
-                  data-title="${details.Title}"
-                  data-poster="${details.Poster}"
-                >+</button>
-                <p class="btn-add-text">Watchlist</p>
-            </div>
-              <p>${details.Plot}</p>
-            </div>
-          </div>
-          `).join("")
+      renderMovies(detailsArray)
 
     } catch (err) {
       console.log("Search failed:", err)
@@ -118,6 +162,8 @@ document.addEventListener("click", (e) => {
   // Save back to localStorage (persists across page reloads and pages)
   localStorage.setItem("watchlist", JSON.stringify(list));
 });
+
+
 
 /* =========================
    WATCHLIST PAGE
