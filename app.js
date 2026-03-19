@@ -1,82 +1,93 @@
 // Public demo API key for OMDb
-const API_KEY = "284cda59";
+const API_KEY = "284cda59"
+const BASE_URL = "https://www.omdbapi.com"
 
-/* =========================
-   SEARCH PAGE ELEMENTS
-   ========================= */
-const searchBtn = document.getElementById("search-btn"); // the search button
-const movieList = document.getElementById("movie-list"); // container where results render
-const initialIcon = document.getElementById("initial-icon"); // empty-state icon wrapper
-const inputEl = document.getElementById("input-field"); // the search <input>
+/* SEARCH PAGE ELEMENTS */
+const searchBtn = document.getElementById("search-btn") // the search button
+const movieList = document.getElementById("movie-list") // container where results render
+const initialIcon = document.getElementById("initial-icon") // empty-state icon wrapper
+const inputEl = document.getElementById("input-field") // the search <input>
 
-/* Run search logic only on the search page
-   (these elements don’t exist on the watchlist page) */
+// Give me a list of movies (basic info)
+async function fetchMovies(query) {
+  const res = await fetch(`${BASE_URL}/?s=${query}&apikey=${API_KEY}`)
+  const data = await res.json()
+  return data.Search ?? null
+}
+
+// Give me full details for ONE movie
+async function fetchMovieDetails(imdbID) {
+  try {
+    const res = await fetch(`${BASE_URL}/?i=${imdbID}&apikey=${API_KEY}`)
+    const data = await res.json()
+    return data.Response === "True" ? data : null
+  } catch (err) {
+    console.log("Fetch error:", err)
+    return null
+  }
+}
+
+// Run search logic only on the search page
+//  (these elements don’t exist on the watchlist page)
 if (searchBtn && movieList && inputEl) {
+
   // When user clicks Search…
-  searchBtn.addEventListener("click", () => {
-    const query = inputEl.value; // the text the user typed
-    if (!query) return; // do nothing if input is empty
+  searchBtn.addEventListener("click", async () => { // turn into async
+    const query = inputEl.value // the text the user typed
+    if (!query) return // do nothing if input is empty
 
     // Hide the empty-state icon (so results move up)
-    if (initialIcon) initialIcon.classList.add("hidden");
-
+    if (initialIcon) initialIcon.classList.add("hidden")
     // Clear previous results
-    movieList.innerHTML = "";
+    movieList.innerHTML = ""
 
-    // 1) Search OMDb by title text (`s=` returns a lightweight list)
-    fetch(`https://www.omdbapi.com/?s=${query}&apikey=${API_KEY}`)
-      .then((res) => res.json())
-      .then((data) => {
-        // If OMDb didn’t find anything, show friendly message and stop
-        if (!data.Search) {
-          movieList.innerHTML = `
+    try {
+       // Await the search
+      const movies = await fetchMovies(query)
+
+      if (!movies) {
+        movieList.innerHTML = `
           <div class="unable-text-wrapper">
             <p class="unable-text">Unable to find what you're looking for. Please try another search.</p>
-          </div>`;
-          return;
-        }
+          </div>`
+        return
+      }
 
-        // 2) For each search result, fetch full details using imdbID (`i=`)
-        data.Search.forEach((movie) => {
-          fetch(`https://www.omdbapi.com/?i=${movie.imdbID}&apikey=${API_KEY}`)
-            .then((res) => res.json())
-            .then((details) => {
-              // We’ll use the poster URL from details. (Tip: you can add a fallback if it's "N/A")
-              const poster = details.Poster;
+      // Fetch all movies details in parallel with Promise.all
+      const detailsArray = (await Promise.all(
+        movies.map(movie => fetchMovieDetails(movie.imdbID))
+      )).filter(Boolean) // clean final array
 
-              // 3) Append one movie card to the results list.
-              //    Includes a minimal "Add" button that stores to localStorage.
-              movieList.innerHTML += `
-                <div class="movie-card">
-                  <div>
-                    <img class="movie-img" src="${details.Poster}"/>
-                  </div>
+      // Render
+        movieList.innerHTML = detailsArray.map(details => `
+          <div class="movie-card">
+            <div>
+              <img class="movie-img" src="${details.Poster}"/>
+            </div>
+            <div class="card-container">
+              <h3 class="movie-title">${details.Title} ⭐${details.imdbRating}</h3>
+              <div class="movie-details">
+                <p>${details.Runtime}</p>
+                <p>${details.Genre}</p>
+              <!-- The button carries the data we want to save in data-* attributes -->
+                <button
+                  class="btn-add"
+                  data-id="${details.imdbID}"
+                  data-title="${details.Title}"
+                  data-poster="${details.Poster}"
+                >+</button>
+                <p class="btn-add-text">Watchlist</p>
+            </div>
+              <p>${details.Plot}</p>
+            </div>
+          </div>
+          `).join("")
 
-                  <div class="card-container">
-                    <h3 class="movie-title">${details.Title} ⭐${details.imdbRating}</h3>
-
-                    <div class="movie-details">
-                      <p>${details.Runtime}</p>
-                      <p>${details.Genre}</p>
-
-                      <!-- The button carries the data we want to save in data-* attributes -->
-                      <button
-                        class="btn-add"
-                        data-id="${details.imdbID}"
-                        data-title="${details.Title}"
-                        data-poster="${poster}"
-                      >+</button>
-
-                      <p class="btn-add-text">Watchlist</p>
-                    </div>
-
-                    <p>${details.Plot}</p>
-                  </div>
-                </div>`;
-            });
-        });
-      });
-  });
+    } catch (err) {
+      console.log("Search failed:", err)
+      movieList.innerHTML = `<p class="unable-text">Something went wrong. Please try again.</p>`
+    }
+  })
 }
 
 /* =========================
