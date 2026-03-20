@@ -76,6 +76,21 @@ async function fetchMovieDetails(imdbID) {
                   `
         }
 
+        function createWatchlistCard(movie) {
+          return `
+            <div class="movie-card">
+              <div>
+                <img class="movie-img" src="${movie.Poster}" alt="${movie.Title} poster"/>
+              </div>
+              <div class="card-container">
+                <h3 class="movie-title">${movie.Title}</h3>
+                <!-- Remove button: carries imdbID -->
+                <button class="btn-remove" data-id="${movie.imdbID}">x</button>
+              </div>
+            </div>
+          `
+        }
+
         function renderMovies(detailsArray) {
           movieList.innerHTML = detailsArray
           .map(movie => createMovieCard(movie))
@@ -85,8 +100,8 @@ async function fetchMovieDetails(imdbID) {
 
         // Error function
 
-        function showError(message) {
-          movieList.innerHTML = `
+        function showError(container, message) {
+          container.innerHTML = `
             <div class="unable-text-wrapper">
               <p class="unable-text">${message}</p>
             </div>
@@ -97,9 +112,20 @@ async function fetchMovieDetails(imdbID) {
 // ============================================================
 // WATCHLIST HELPERS  ← localStorage functions
 // ============================================================
+const STORAGE_KEY = "watchlist"
+
+// Small helpers to read/write localStorage cleanly 
+// "reads from localStorage"
+const getWatchlist = () =>
+  JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]")
+
+// writes to localStorage
+const saveWatchlist = (list) =>
+   localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
+
 
 // ============================================================
-// EVENT LISTENERS  ← wires everything together, goes last
+// EVENT LISTENERS  ← wires everything together
 // ============================================================
 /* =========================
    SEARCH PAGE
@@ -122,13 +148,9 @@ if (searchBtn && movieList && inputEl) {
        // Await the search
       const movies = await fetchMovies(query)
 
-      // showError function here
+      // showError function
       if (!movies) {
-        // movieList.innerHTML = `
-        //   <div class="unable-text-wrapper">
-        //     <p class="unable-text">Unable to find what you're looking for. Please try another search.</p>
-        //   </div>`
-        showError("Unable to find what you're looking for. Please try another search.")
+        showError(movieList, "Unable to find what you're looking for. Please try another search.")
         return
       }
 
@@ -141,39 +163,42 @@ if (searchBtn && movieList && inputEl) {
 
     } catch (err) {
       console.log("Search failed:", err)
-      showError("Something went wrong. Please try again.")
+      showError(movieList, "Something went wrong. Please try again.")
     }
   })
 }
 
 /* =========================
-   ADD TO WATCHLIST (shared)
+   ADD TO WATCHLIST
    =========================
    We use event delegation: listen once on document,
    and only react if the click was on a .btn-add.
 */
-document.addEventListener("click", (e) => {
-  const btn = e.target.closest(".btn-add");
-  if (!btn) return; // ignore clicks that aren’t on an Add button
 
-  // Read current list from localStorage (or start empty)
-  const list = JSON.parse(localStorage.getItem("watchlist") || "[]");
+function addToWatchlist(btn) {
+  const list = getWatchlist()
 
   // Prevent duplicates: if this imdbID already exists, stop
-  const id = btn.dataset.id;
-  const exists = list.some((m) => m.imdbID === id);
-  if (exists) return;
+  const id = btn.dataset.id
+  const exists = list.some((m) => m.imdbID === id)
+  if (exists) return
 
   // Build the minimal movie record we want to keep
   list.push({
     imdbID: id,
     Title: btn.dataset.title,
     Poster: btn.dataset.poster,
-  });
+  })
 
-  // Save back to localStorage (persists across page reloads and pages)
-  localStorage.setItem("watchlist", JSON.stringify(list));
-});
+  saveWatchlist(list)
+}
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".btn-add")
+  if (!btn) return // ignore clicks that aren’t on an Add button
+
+  addToWatchlist(btn)
+})
 
 
 
@@ -183,64 +208,43 @@ document.addEventListener("click", (e) => {
    Render whatever is saved in localStorage.
    This code only runs if the #watchlist element exists on the page.
 */
-const listEl = document.getElementById("watchlist");
+const listEl = document.getElementById("watchlist")
 
 if (listEl) {
-  const STORAGE_KEY = "watchlist";
 
-  // Small helpers to read/write localStorage cleanly
-  const getWatchlist = () =>
-    JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-
-  const saveWatchlist = (list) =>
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-
-  // Render the full watchlist into the container
+  // Render watchlist
   function renderWatchlist() {
-    const list = getWatchlist();
+    const list = getWatchlist()
 
     // Empty state message
     if (!list.length) {
-      listEl.innerHTML = `
-        <div class="unable-text-wrapper">
-          <p class="unable-text">Your watchlist is empty.</p>
-        </div>`;
-      return;
+      showError(listEl, "Your watchlist is empty.")
+      return
     }
 
     // Build a simple card for each saved movie
     listEl.innerHTML = list
-      .map(
-        (m) => `
-        <div class="movie-card">
-          <div>
-            <img class="movie-img" src="${m.Poster}" alt="${m.Title} poster"/>
-          </div>
-          <div class="card-container">
-            <h3 class="movie-title">${m.Title}</h3>
-            <!-- Remove button: carries imdbID -->
-            <button class="btn-remove" data-id="${m.imdbID}">x</button>
-          </div>
-        </div>`
-      )
-      .join("");
+      .map(movie => createWatchlistCard(movie))
+      .join("")
   }
 
-  // Initial render when the page loads
-  renderWatchlist();
 
   // Click handler to remove an item (updates storage, then re-renders)
   listEl.addEventListener("click", (e) => {
-    const rm = e.target.closest(".btn-remove");
-    if (!rm) return;
+    const btn = e.target.closest(".btn-remove")
+    if (!btn) return
 
-    const id = rm.dataset.id;
+    const id = btn.dataset.id
 
     // Remove the clicked movie from the stored array
-    const next = getWatchlist().filter((m) => m.imdbID !== id);
-    saveWatchlist(next);
+    const next = getWatchlist().filter((m) => m.imdbID !== id)
+    saveWatchlist(next)
 
     // Re-render the list so the UI updates immediately
-    renderWatchlist();
-  });
+    renderWatchlist()
+  })
+
+  // Initial render when the page loads
+  renderWatchlist()
+
 }
