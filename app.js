@@ -83,6 +83,17 @@ async function fetchMovieDetails(imdbID) {
         }
 
 
+        // Error function
+
+        function showError(message) {
+          movieList.innerHTML = `
+            <div class="unable-text-wrapper">
+              <p class="unable-text">${message}</p>
+            </div>
+          `
+        }
+
+
 // ============================================================
 // WATCHLIST HELPERS  ← localStorage functions
 // ============================================================
@@ -113,10 +124,11 @@ if (searchBtn && movieList && inputEl) {
 
       // showError function here
       if (!movies) {
-        movieList.innerHTML = `
-          <div class="unable-text-wrapper">
-            <p class="unable-text">Unable to find what you're looking for. Please try another search.</p>
-          </div>`
+        // movieList.innerHTML = `
+        //   <div class="unable-text-wrapper">
+        //     <p class="unable-text">Unable to find what you're looking for. Please try another search.</p>
+        //   </div>`
+        showError("Unable to find what you're looking for. Please try another search.")
         return
       }
 
@@ -129,7 +141,7 @@ if (searchBtn && movieList && inputEl) {
 
     } catch (err) {
       console.log("Search failed:", err)
-      movieList.innerHTML = `<p class="unable-text">Something went wrong. Please try again.</p>`
+      showError("Something went wrong. Please try again.")
     }
   })
 }
