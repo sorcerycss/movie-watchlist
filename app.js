@@ -14,6 +14,7 @@ const searchBtn = document.getElementById("search-btn") // the search button
 const movieList = document.getElementById("movie-list") // container where results render
 const initialIcon = document.getElementById("initial-icon") // empty-state icon wrapper
 const inputEl = document.getElementById("input-field") // the search <input>
+const spinner = document.getElementById("spinner") //spinner
 
 
 /* =========================
@@ -117,9 +118,17 @@ async function fetchMovieDetails(imdbID) {
           .join("")
         }
 
+        function showSpinner() {
+          spinner.classList.remove("hidden")
+          movieList.innerHTML = ""
+        }
+
+        function hideSpinner() {
+          spinner.classList.add("hidden")
+        }
+
 
         // Error function
-
         function showError(container, message) {
           container.innerHTML = `
             <div class="unable-text-wrapper">
@@ -134,7 +143,8 @@ async function fetchMovieDetails(imdbID) {
 // ============================================================
 const STORAGE_KEY = "watchlist"
 
-// Small helpers to read/write localStorage cleanly 
+// Small helpers to read/write localStorage cleanly
+
 // "reads from localStorage"
 const getWatchlist = () =>
   JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]")
@@ -164,12 +174,15 @@ if (searchBtn && movieList && inputEl) {
     // Clear previous results
     movieList.innerHTML = ""
 
+    showSpinner()
+
     try {
        // Await the search
       const movies = await fetchMovies(query)
 
       // showError function
       if (!movies) {
+        hideSpinner()
         showError(movieList, "Unable to find what you're looking for. Please try another search.")
         return
       }
@@ -179,10 +192,12 @@ if (searchBtn && movieList && inputEl) {
         movies.map(movie => fetchMovieDetails(movie.imdbID))
       )).filter(Boolean) // clean final array
 
+      hideSpinner()
       renderMovies(detailsArray)
 
     } catch (err) {
       console.log("Search failed:", err)
+      hideSpinner()
       showError(movieList, "Something went wrong. Please try again.")
     }
   })
