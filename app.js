@@ -51,10 +51,18 @@ async function fetchMovieDetails(imdbID) {
 
 //Take one movie object, return its HTML
         function createMovieCard(movie) {
+          const poster = (movie.Poster && movie.Poster !== "N/A")
+            ? movie.Poster
+            : "https://placehold.co/300x450?text=No+Poster"
+
           return `
                   <div class="movie-card">
                     <div>
-                      <img class="movie-img" src="${movie.Poster}"/>
+                      <img
+                        class="movie-img"
+                        src="${poster}"
+                        onerror="this.src='https://placehold.co/300x450?text=No+Poster'"
+                      />
                     </div>
                     <div class="card-container">
                       <h3 class="movie-title">${movie.Title} ⭐${movie.imdbRating}</h3>
@@ -77,15 +85,27 @@ async function fetchMovieDetails(imdbID) {
         }
 
         function createWatchlistCard(movie) {
+          const poster = (movie.Poster && movie.Poster !== "N/A")
+            ? movie.Poster
+            : "https://placehold.co/300x450?text=No+Poster"
+
           return `
             <div class="movie-card">
               <div>
-                <img class="movie-img" src="${movie.Poster}" alt="${movie.Title} poster"/>
+                <img
+                  class="movie-img"
+                  src="${poster}"
+                  alt="${movie.Title}"
+                  onerror="this.src='https://placehold.co/300x450?text=No+Poster'"
+                />
               </div>
               <div class="card-container">
                 <h3 class="movie-title">${movie.Title}</h3>
                 <!-- Remove button: carries imdbID -->
-                <button class="btn-remove" data-id="${movie.imdbID}">x</button>
+                <button 
+                  class="btn-remove"
+                  data-id="${movie.imdbID}"
+                  >x</button>
               </div>
             </div>
           `
@@ -234,17 +254,13 @@ if (listEl) {
     const btn = e.target.closest(".btn-remove")
     if (!btn) return
 
-    const id = btn.dataset.id
-
     // Remove the clicked movie from the stored array
+    const id = btn.dataset.id
     const next = getWatchlist().filter((m) => m.imdbID !== id)
     saveWatchlist(next)
-
-    // Re-render the list so the UI updates immediately
-    renderWatchlist()
+    renderWatchlist() // Re-render the list so the UI updates immediately
   })
 
-  // Initial render when the page loads
-  renderWatchlist()
+  renderWatchlist() // Initial render when the page loads
 
 }
