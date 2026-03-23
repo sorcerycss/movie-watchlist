@@ -201,6 +201,13 @@ if (searchBtn && movieList && inputEl) {
       showError(movieList, "Something went wrong. Please try again.")
     }
   })
+
+  // Trigger search when the user hits Enter
+  // works for both adding or removing when navigating through Tab
+  inputEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") searchBtn.click()
+  })
+
 }
 
 /* =========================
