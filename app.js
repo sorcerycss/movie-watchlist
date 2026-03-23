@@ -254,15 +254,20 @@ const listEl = document.getElementById("watchlist")
 
 if (listEl) {
 
+  const clearBtn = document.getElementById("btn-clear")
+
   // Render watchlist
   function renderWatchlist() {
     const list = getWatchlist()
 
     // Empty state message
     if (!list.length) {
+      clearBtn.classList.add("hidden")
       showError(listEl, "Your watchlist is empty.")
       return
     }
+
+    clearBtn.classList.remove("hidden")
 
     // Build a simple card for each saved movie
     listEl.innerHTML = list
@@ -270,6 +275,10 @@ if (listEl) {
       .join("")
   }
 
+    clearBtn.addEventListener("click", () => {
+      saveWatchlist([])
+      renderWatchlist()
+    })
 
   // Click handler to remove an item (updates storage, then re-renders)
   listEl.addEventListener("click", (e) => {

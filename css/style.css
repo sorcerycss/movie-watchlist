@@ -191,6 +191,12 @@ a {
   margin-left: 5px;
 }
 
+.btn-clear {
+  padding: 1em 0;
+  cursor: pointer;
+  margin-bottom: 1em;
+}
+
 .unable-text-wrapper {
   display: grid;
   place-items: center;
