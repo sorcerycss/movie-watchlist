@@ -182,6 +182,12 @@ a {
   transform: translate(-50%, -50%) rotate(90deg);
 }
 
+.btn-add.is-added {
+  background: gray;
+  opacity: 0.6;
+  cursor: default;
+}
+
 .btn-add-text {
   font-family: inherit;
   font-size: 12px;
