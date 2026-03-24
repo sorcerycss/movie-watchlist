@@ -51,7 +51,7 @@ async function fetchMovieDetails(imdbID) {
    ========================= */
 
 //Take one movie object, return its HTML
-        function createMovieCard(movie) {
+        function createMovieCard(movie, isAdded) {
           const poster = (movie.Poster && movie.Poster !== "N/A")
             ? movie.Poster
             : "https://placehold.co/300x450?text=No+Poster"
@@ -72,11 +72,12 @@ async function fetchMovieDetails(imdbID) {
                         <p>${movie.Genre}</p>
                       <!-- The button carries the data we want to save in data-* attributes -->
                         <button
-                          class="btn-add"
+                          class="btn-add ${isAdded ? 'is-added' : ''}"
                           data-id="${movie.imdbID}"
                           data-title="${movie.Title}"
                           data-poster="${movie.Poster}"
-                        >+</button>
+                          ${isAdded ? 'disabled' : ''}
+                        >${isAdded ? '✓' : '+'}</button>
                         <p class="btn-add-text">Watchlist</p>
                     </div>
                       <p>${movie.Plot}</p>
@@ -113,8 +114,13 @@ async function fetchMovieDetails(imdbID) {
         }
 
         function renderMovies(detailsArray) {
+          const watchlist = getWatchlist()
+
           movieList.innerHTML = detailsArray
-          .map(movie => createMovieCard(movie))
+          .map(movie => {
+            const isAdded = watchlist.some(m => m.imdbID === movie.imdbID)
+            return createMovieCard(movie, isAdded)
+          })
           .join("")
         }
 
@@ -238,8 +244,13 @@ function addToWatchlist(btn) {
 document.addEventListener("click", (e) => {
   const btn = e.target.closest(".btn-add")
   if (!btn) return // ignore clicks that aren’t on an Add button
+  if (btn.disabled) return //ignore clicks on already-added btn
 
   addToWatchlist(btn)
+
+  btn.textContent = "✓"
+  btn.disabled = true
+  btn.classList.add("is-added")
 })
 
 
