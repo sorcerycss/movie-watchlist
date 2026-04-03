@@ -242,3 +242,18 @@ a {
     transform: rotate(360deg);
   }
 }
+
+#genre-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 0;
+}
+
+#genre-filters button {
+  padding: 6px 14px;
+  border: 1px solid red;
+  border-radius: 999px;
+  cursor: pointer;
+  background: transparent;
+}

@@ -9,6 +9,7 @@ import {
     showSpinner,
     hideSpinner,
     showError,
+    renderGenreFilters,
 } from "./ui.js"
 
 // ── DOM references ────────────────────────────────────────
@@ -17,27 +18,90 @@ const movieList = document.getElementById("movie-list") // container where resul
 const initialIcon = document.getElementById("initial-icon") // empty-state icon wrapper
 const inputEl = document.getElementById("input-field") // the search <input>
 
+console.log('main.js loaded')
+console.log('searchBtn:', document.getElementById("search-btn"))
+console.log('movieList:', document.getElementById("movie-list"))
+console.log('inputEl:', document.getElementById("input-field"))
+
 // ── Search page ───────────────────────────────────────────
 if (searchBtn && movieList && inputEl) {
 
+  // centralized state
+  // const state = {
+  //   results: [],
+  //   activeGenres: new Set()
+  // }
+
+  let currentResults = []
+  
+  let currentGenres = []
+  const activeGenres = new Set()
+
+  let sortBy = 'default'
+
+  const sortSelect = document.getElementById('sort-select')
+
+  function applyFiltersAndSort(genres) {
+
+    console.log('applyFiltersAndSort called, genres:', genres)
+
+    // filter currentResults and re-render
+      const filtered = activeGenres.size === 0
+      ? currentResults
+      : currentResults.filter(movie => 
+      movie.Genre?.split(', ').some(g => activeGenres.has(g)) ?? false
+      )
+
+      const sorted = [...filtered].sort((a, b) => {
+        if (sortBy === 'rating') return b.imdbRating - a.imdbRating
+        if (sortBy === 'year') return b.Year - a.Year
+        return 0
+      })
+
+      renderMovies(sorted)
+
+      renderGenreFilters(genres, activeGenres, (genre) => {
+        if (activeGenres.has(genre)) activeGenres.delete(genre)
+        else activeGenres.add(genre)
+
+       applyFiltersAndSort(genres)
+      })
+
+      const sortSelect = document.getElementById('sort-select')
+      sortSelect.addEventListener('change', () => {
+        sortBy = sortSelect.value
+        applyFiltersAndSort(currentGenres)
+      })
+  }
+
   // When user clicks Search…
+
+  let isLoading = false
+
   searchBtn.addEventListener("click", async () => { // turn into async
-    const query = inputEl.value // the text the user typed
+    console.log('search clicked')
+
+    if (isLoading) return
+    isLoading = true
+
+    const query = inputEl.value.trim() // the text the user typed
     if (!query) return // do nothing if input is empty
 
     // Hide the empty-state icon (so results move up)
     if (initialIcon) initialIcon.classList.add("hidden")
     // Clear previous results
     movieList.innerHTML = ""
+    sortSelect.classList.add('hidden')
 
     showSpinner()
 
     try {
        // Await the search
       const movies = await fetchMovies(query)
+      console.log('movies fetched:', movies)
 
       // showError function
-      if (!movies) {
+      if (!movies || movies.length === 0) {
         hideSpinner()
         showError(movieList, "Unable to find what you're looking for. Please try another search.")
         return
@@ -49,12 +113,32 @@ if (searchBtn && movieList && inputEl) {
       )).filter(Boolean) // clean final array
 
       hideSpinner()
-      renderMovies(detailsArray)
+
+      currentResults = detailsArray
+
+      activeGenres.clear() // reset filters on each new search
+
+      const genreSet = new Set()
+      detailsArray.forEach(movie => {
+        if (movie.Genre && movie.Genre !== 'N/A') {
+          movie.Genre.split(', ').forEach(g => genreSet.add(g))
+        }
+      })
+
+      currentGenres = [...genreSet].sort()
+
+      // renderMovies(currentResults)
+      applyFiltersAndSort(currentGenres)
+      sortSelect.classList.remove('hidden')
+      
 
     } catch (err) {
       console.log("Search failed:", err)
       hideSpinner()
       showError(movieList, "Something went wrong. Please try again.")
+
+    } finally {
+      isLoading = false
     }
   })
 
@@ -80,6 +164,7 @@ function addToWatchlist(btn) {
     imdbID: id,
     Title: btn.dataset.title,
     Poster: btn.dataset.poster,
+    Genre: btn.dataset.genre,
   })
 
   saveWatchlist(list)
@@ -110,7 +195,10 @@ if (listEl) {
 
     // Empty state message
     if (!list.length) {
-      clearBtn.classList.add("hidden")
+      if (clearBtn) {
+        clearBtn.classList.add("hidden")
+      }
+      
       showError(listEl, "Your watchlist is empty.")
       return
     }
@@ -141,5 +229,4 @@ if (listEl) {
   })
 
   renderWatchlist() // Initial render when the page loads
-
 }
