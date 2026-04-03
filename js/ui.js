@@ -34,6 +34,7 @@ export function createMovieCard(movie, isAdded) {
                   data-id="${movie.imdbID}"
                   data-title="${movie.Title}"
                   data-poster="${movie.Poster}"
+                  data-genre="${movie.Genre}"
                   ${isAdded ? 'disabled' : ''}
                 >${isAdded ? '✓' : '+'}</button>
                 <p class="btn-add-text">Watchlist</p>
@@ -71,9 +72,23 @@ export function createWatchlistCard(movie) {
   `
 }
 
+export function renderGenreFilters(genres, activeGenres, onToggle) {
+  const container = document.getElementById('genre-filters')
+  container.innerHTML = ''
+
+  genres.forEach(genre => {
+    const btn = document.createElement('button')
+    btn.textContent = genre
+    btn.classList.toggle('active', activeGenres.has(genre))
+    btn.addEventListener('click', () => onToggle(genre))
+    container.appendChild(btn)
+  })
+}
+
 // ── Render helpers ──────────────────────────────────────────
 export function renderMovies(detailsArray) {
   const watchlist = getWatchlist()
+
   movieList.innerHTML = detailsArray
   .map(movie => {
     const isAdded = watchlist.some(m => m.imdbID === movie.imdbID)
@@ -81,6 +96,16 @@ export function renderMovies(detailsArray) {
   })
   .join("")
 }
+
+// export function renderWatchlist(activeGenres) {
+//   const watchlist = getWatchlist()
+
+//   const filtered = activeGenres.size === 0
+//     ? watchlist
+//     : watchlist.filter(movie => 
+//       movie.Genre.split(', ').some(g => activeGenres.has(g))
+//     )
+// }
 
 export function showSpinner() {
   spinner.classList.remove("hidden")
